@@ -46,7 +46,11 @@ func RunCase(contract Contract, bundle Bundle, fixtureCase FixtureCase, engine s
 	semantic.Plan.NextOperation = nextOperation
 	semantic.Plan.BlockedBy = append([]string(nil), blockedBy...)
 	semantic.Evidence.FullVerificationStatus = fullStatus
-	metrics := Metrics{WallMS: wallMS, PeakRSSKiB: afterRSS, Requests: fetchStats.Requests, BytesRead: fetchStats.BytesRead, BytesDownloaded: fetchStats.BytesDownloaded, Selected: len(locks), Executed: len(locks), Reused: len(semantic.Plan.Reused), Unknown: boolInt(semantic.Plan.Status == Unknown), Refuted: boolInt(semantic.Plan.Status == Refuted)}
+	actualReused := 0
+	if engine == "candidate" && semantic.Plan.Status == Closed {
+		actualReused = len(semantic.Plan.Reused)
+	}
+	metrics := Metrics{WallMS: wallMS, PeakRSSKiB: afterRSS, Requests: fetchStats.Requests, BytesRead: fetchStats.BytesRead, BytesDownloaded: fetchStats.BytesDownloaded, Selected: len(locks), Executed: len(locks), Reused: actualReused, Unknown: boolInt(semantic.Plan.Status == Unknown), Refuted: boolInt(semantic.Plan.Status == Refuted)}
 	return CaseRun{Engine: engine, CaseID: fixtureCase.ID, Status: semantic.Plan.Status, ReuseEligibility: semantic.Plan.Status, ReuseClaim: semantic.Plan.Status, FullVerificationStatus: fullStatus, SemanticRoot: semantic.SemanticRoot, ExecutionMode: executionMode, FallbackReason: fallbackReason, NextOperation: nextOperation, BlockedBy: append([]string(nil), blockedBy...), Plan: semantic.Plan, Evidence: semantic.Evidence, Metrics: metrics, Fetched: fetched}, nil
 }
 
