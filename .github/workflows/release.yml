@@ -1,0 +1,74 @@
+name: Immutable content-addressed proof reuse release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Verify annotated tag identity before publication
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          tag_object_sha=$(git ls-remote --refs origin "refs/tags/$GITHUB_REF_NAME" | awk 'NR == 1 {print $1}')
+          test -n "$tag_object_sha"
+          test "$(git cat-file -t "$tag_object_sha")" = "tag"
+          test "$(git rev-parse "$tag_object_sha^{commit}")" = "$GITHUB_SHA"
+          echo "tag_object_sha=$tag_object_sha" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Prepare immutable asset and manifest in runner temp
+        id: asset
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          commit_sha=$(git rev-parse HEAD)
+          tag_object_sha=$(git ls-remote --refs origin "refs/tags/$GITHUB_REF_NAME" | awk 'NR == 1 {print $1}')
+          archive="gooo-content-addressed-proof-reuse-${GITHUB_REF_NAME}.tar.gz"
+          git archive --format=tar.gz --prefix="gooo-content-addressed-proof-reuse-${GITHUB_REF_NAME}/" "$commit_sha" > "$RUNNER_TEMP/$archive"
+          asset_digest="sha256:$(sha256sum "$RUNNER_TEMP/$archive" | awk '{print $1}')"
+          asset_size=$(wc -c < "$RUNNER_TEMP/$archive" | tr -d ' ')
+          printf '%s  %s\n' "$asset_digest" "$archive" > "$RUNNER_TEMP/SHA256SUMS"
+          jq -S -n \
+            --arg tag "$GITHUB_REF_NAME" \
+            --arg tag_object_sha "$tag_object_sha" \
+            --arg commit_sha "$commit_sha" \
+            --arg archive "$archive" \
+            --arg asset_digest "$asset_digest" \
+            --argjson asset_size "$asset_size" \
+            '{schema:"gooo/content-addressed-proof-reuse/release-manifest/v1",tag:$tag,tag_object_sha:$tag_object_sha,commit_sha:$commit_sha,archive:$archive,asset_size_bytes:$asset_size,asset_digest:$asset_digest,immutable:true}' \
+            > "$RUNNER_TEMP/release-manifest.json"
+          echo "archive=$archive" >> "$GITHUB_OUTPUT"
+
+      - name: Publish immutable release after draft preparation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "gooo-content-addressed-proof-reuse $GITHUB_REF_NAME" \
+            --notes "Immutable source asset bound to annotated tag object $(git ls-remote --refs origin "refs/tags/$GITHUB_REF_NAME" | awk 'NR == 1 {print $1}')." \
+            "$RUNNER_TEMP/${{ steps.asset.outputs.archive }}" \
+            "$RUNNER_TEMP/SHA256SUMS" \
+            "$RUNNER_TEMP/release-manifest.json"
+
+      - name: Audit actual immutable release and asset digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" > "$RUNNER_TEMP/release.json"
+          jq -e --arg tag "$GITHUB_REF_NAME" --arg archive "${{ steps.asset.outputs.archive }}" \
+            '.tag_name == $tag and .target_commitish != "" and .draft == false and .immutable == true and ([.assets[] | select(.name == $archive and .digest != null)] | length == 1)' \
+            "$RUNNER_TEMP/release.json" >/dev/null
+          cat "$RUNNER_TEMP/release.json" >> "$GITHUB_STEP_SUMMARY"
