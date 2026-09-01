@@ -49,18 +49,31 @@ jobs:
             > "$RUNNER_TEMP/release-manifest.json"
           echo "archive=$archive" >> "$GITHUB_OUTPUT"
 
-      - name: Publish immutable release after draft preparation
+      - name: Create draft release before attaching assets
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
           gh release create "$GITHUB_REF_NAME" \
             --verify-tag \
+            --draft \
             --title "gooo-content-addressed-proof-reuse $GITHUB_REF_NAME" \
-            --notes "Immutable source asset bound to annotated tag object $(git ls-remote --refs origin "refs/tags/$GITHUB_REF_NAME" | awk 'NR == 1 {print $1}')." \
+            --notes "Draft prepared for immutable source asset bound to annotated tag object $(git ls-remote --refs origin "refs/tags/$GITHUB_REF_NAME" | awk 'NR == 1 {print $1}')."
+
+      - name: Attach all immutable release assets to the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          gh release upload "$GITHUB_REF_NAME" \
             "$RUNNER_TEMP/${{ steps.asset.outputs.archive }}" \
             "$RUNNER_TEMP/SHA256SUMS" \
             "$RUNNER_TEMP/release-manifest.json"
+
+      - name: Publish the prepared draft as immutable
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false
 
       - name: Audit actual immutable release and asset digest
         env:
