@@ -1,0 +1,32 @@
+{
+  "schema": "gooo/content-addressed-proof-reuse/contract/v1",
+  "protocol": "gooo/content-addressed-proof-reuse/v1",
+  "roles": [
+    "parent_receipt_verifier",
+    "content_addressed_reuse_planner",
+    "delta_verifier",
+    "canonical_evidence_generator"
+  ],
+  "reuse_authorization": [
+    "parent_release_actual_immutable",
+    "annotated_tag_target_exact",
+    "source_artifact_exact",
+    "parent_asset_digest_verified",
+    "parent_receipt_root_verified",
+    "current_lock_coordinate_digest_exact",
+    "dependency_unaffected",
+    "cache_authority_exact"
+  ],
+  "fallback": {
+    "unknown_or_refuted_eligibility_preserved": true,
+    "execution_mode": "FULL_FALLBACK",
+    "reused": 0,
+    "selected": "current_lock_count",
+    "full_verification_result_may_close": true
+  },
+  "unknown_fields": ["stage", "step", "reason", "unknown_class", "next_operation", "blocked_by"],
+  "status_precedence": ["REFUTED", "UNKNOWN", "CLOSED"],
+  "hash_algorithm": "sha256",
+  "retry_count": 0,
+  "timeout_ms": 1000
+}

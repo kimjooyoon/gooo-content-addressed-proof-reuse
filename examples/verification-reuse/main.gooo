@@ -1,0 +1,7 @@
+protocol|gooo/content-addressed-proof-reuse/v1
+source_role|parent_receipt_verifier
+source_role|content_addressed_reuse_planner
+source_role|delta_verifier
+source_role|canonical_evidence_generator
+replay_obligation|cache hit is not semantic proof
+replay_obligation|fallback never promotes UNKNOWN or REFUTED eligibility

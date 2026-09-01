@@ -1,0 +1,118 @@
+name: content-addressed-proof-reuse
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout the exact candidate source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use the declared Go toolchain
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.x'
+          cache: true
+
+      - name: Prepare caller-owned evidence directory
+        run: mkdir -p "$RUNNER_TEMP/gooo-content-addressed-proof-reuse/evidence"
+
+      - name: Build verifier once for the shared runner
+        id: build
+        continue-on-error: true
+        run: |
+          set +e
+          work="$RUNNER_TEMP/gooo-content-addressed-proof-reuse"
+          /usr/bin/time -f '%e %M' -o "$work/build.time" go build -o "$work/gooo-content-addressed-proof-reuse" ./cmd/gooo-content-addressed-proof-reuse
+          status=$?
+          exit "$status"
+
+      - name: Run Go tests in GitHub Actions
+        id: tests
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set +e
+          work="$RUNNER_TEMP/gooo-content-addressed-proof-reuse"
+          /usr/bin/time -f '%e %M' -o "$work/test.time" sh -c 'go test -json -count=1 ./... > "$RUNNER_TEMP/gooo-content-addressed-proof-reuse/go-test.json"'
+          status=$?
+          exit "$status"
+
+      - name: Run nine-case contract conformance
+        id: conformance
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          test "$(jq -r '.immutable' fixtures/fixture-bundle-manifest.json)" = true
+          test "sha256:$(shasum -a 256 fixtures/fixture-bundle-v1.json | awk '{print $1}')" = "$(jq -r '.files[0].digest' fixtures/fixture-bundle-manifest.json)"
+          "$RUNNER_TEMP/gooo-content-addressed-proof-reuse/gooo-content-addressed-proof-reuse" conformance \
+            --contract .gooo/content-addressed-proof-reuse.gooo \
+            --bundle fixtures/fixture-bundle-v1.json
+
+      - name: Run baseline and candidate on the same fixture server and runner
+        id: suite
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set +e
+          work="$RUNNER_TEMP/gooo-content-addressed-proof-reuse"
+          /usr/bin/time -f '%e %M' -o "$work/suite.time" "$work/gooo-content-addressed-proof-reuse" suite \
+            --contract .gooo/content-addressed-proof-reuse.gooo \
+            --bundle fixtures/fixture-bundle-v1.json \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --output-dir "$work/evidence"
+          status=$?
+          exit "$status"
+
+      - name: Verify exact evidence invariants
+        id: invariants
+        if: always() && steps.suite.outcome == 'success'
+        continue-on-error: true
+        run: scripts/ci-verify.sh "$RUNNER_TEMP/gooo-content-addressed-proof-reuse/evidence/suite-evidence.json"
+
+      - name: Verify the source checkout was not mutated
+        id: source_boundary
+        if: always()
+        continue-on-error: true
+        run: test -z "$(git status --porcelain)"
+
+      - name: Record exact artifact digests
+        if: always()
+        continue-on-error: true
+        run: |
+          work="$RUNNER_TEMP/gooo-content-addressed-proof-reuse"
+          find "$work" -type f -print0 | sort -z | xargs -0 shasum -a 256 > "$work/artifact-digests.txt"
+
+      - name: Upload retained evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: content-addressed-proof-reuse-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gooo-content-addressed-proof-reuse/**
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Enforce all verification gates
+        if: always()
+        run: |
+          test "${{ steps.build.outcome }}" = success
+          test "${{ steps.tests.outcome }}" = success
+          test "${{ steps.conformance.outcome }}" = success
+          test "${{ steps.suite.outcome }}" = success
+          test "${{ steps.invariants.outcome }}" = success
+          test "${{ steps.source_boundary.outcome }}" = success

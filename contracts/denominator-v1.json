@@ -1,0 +1,18 @@
+{
+  "schema": "gooo/content-addressed-proof-reuse/denominator/v1",
+  "canonical_cases": 9,
+  "status_distribution": {"CLOSED": 3, "UNKNOWN": 3, "REFUTED": 3},
+  "indicator_vector": [
+    "wall_ms", "peak_rss_kib", "requests", "bytes_read", "bytes_downloaded",
+    "selected", "executed", "reused", "unknown", "refuted"
+  ],
+  "semantic_denominators": {
+    "v0.46_incremental_proof": 50,
+    "v0.48_release_locks": 48,
+    "current_fixture_lock_count": 57
+  },
+  "fallback_policy": {
+    "performance_comparison_includes": "eligible_closed_reuse_cases_only",
+    "unknown_and_refuted_cases_included_in_improvement": false
+  }
+}

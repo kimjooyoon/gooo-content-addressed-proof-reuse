@@ -1,0 +1,13 @@
+{
+  "schema": "gooo/content-addressed-proof-reuse/immutable-fixture-manifest/v1",
+  "immutable": true,
+  "hash_algorithm": "sha256",
+  "bundle_id": "content-addressed-proof-reuse-local-v1",
+  "files": [
+    {
+      "path": "fixtures/fixture-bundle-v1.json",
+      "digest": "sha256:1309b4d0a2dbdc8d3073655b5daaff37a90a657b09d3fb854d67b55281017e7f"
+    }
+  ],
+  "authority": "repository-committed-fixture-bundle"
+}

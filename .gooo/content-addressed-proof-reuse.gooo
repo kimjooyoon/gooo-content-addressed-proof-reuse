@@ -1,0 +1,31 @@
+protocol|gooo/content-addressed-proof-reuse/v1
+source_role|parent_receipt_verifier
+source_role|content_addressed_reuse_planner
+source_role|delta_verifier
+source_role|canonical_evidence_generator
+parent_release|shared-ledger|v0.48|380694027|e18e19e3ff58c4c7643d5028b5fc9bf39e83e769|1985612b1f9eb8184e04626b426c88b91901bdd4|true
+parent_asset|539891522|54641017|sha256:3792b53a77d88b3471e6f4889baf24679dcdcfba8314abb32d0dd3469ccdc3aa
+parent_semantic_root|sha256:240db2a8e766ea549266bb1ce42d19ce562fafab668e0872028122d477f6e6ea
+current_lock_set|fixture-bundle-v1:parent,one-delta,all-delta
+historical_denominator|v0.46|semantic|50
+historical_denominator|v0.46|release-lock|48
+current_denominator|v1|release-lock|57
+lock_identity|coordinate+digest
+invalidation_edge|lock.coordinate+lock.digest->lock-verification
+invalidation_edge|dependency_digest->all-lock-verification
+invalidation_edge|release-or-authority->reuse-eligibility
+cache_authority|gooo/content-addressed-proof-reuse/cache-authority/v1
+hash_algorithm|sha256
+replay_obligation|same source, contract, fixture, toolchain, and runner
+replay_obligation|parent receipt root and asset digest must verify
+replay_obligation|UNKNOWN and REFUTED eligibility cannot be promoted by fallback
+canonical_order|ordinal:ascending
+canonical_order|coordinate:ascending-on-ties
+retry|0
+timeout_ms|1000
+unknown_fields|stage,step,reason,unknown_class,next_operation,blocked_by
+indicator_vector|wall_ms,peak_rss_kib,requests,bytes_read,bytes_downloaded,selected,executed,reused,unknown,refuted
+required_case_status|CLOSED|3
+required_case_status|UNKNOWN|3
+required_case_status|REFUTED|3
+cross_project_required_gates|0
