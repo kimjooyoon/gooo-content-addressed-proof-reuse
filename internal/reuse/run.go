@@ -44,14 +44,14 @@ func RunCase(contract Contract, bundle Bundle, fixtureCase FixtureCase, engine s
 	semantic.Plan.ExecutionMode = executionMode
 	semantic.Plan.FallbackReason = fallbackReason
 	semantic.Plan.NextOperation = nextOperation
-	semantic.Plan.BlockedBy = append([]string(nil), blockedBy...)
+	semantic.Plan.BlockedBy = append([]string{}, blockedBy...)
 	semantic.Evidence.FullVerificationStatus = fullStatus
 	actualReused := 0
 	if engine == "candidate" && semantic.Plan.Status == Closed {
 		actualReused = len(semantic.Plan.Reused)
 	}
 	metrics := Metrics{WallMS: wallMS, PeakRSSKiB: afterRSS, Requests: fetchStats.Requests, BytesRead: fetchStats.BytesRead, BytesDownloaded: fetchStats.BytesDownloaded, Selected: len(locks), Executed: len(locks), Reused: actualReused, Unknown: boolInt(semantic.Plan.Status == Unknown), Refuted: boolInt(semantic.Plan.Status == Refuted)}
-	return CaseRun{Engine: engine, CaseID: fixtureCase.ID, Status: semantic.Plan.Status, ReuseEligibility: semantic.Plan.Status, ReuseClaim: semantic.Plan.Status, FullVerificationStatus: fullStatus, SemanticRoot: semantic.SemanticRoot, ExecutionMode: executionMode, FallbackReason: fallbackReason, NextOperation: nextOperation, BlockedBy: append([]string(nil), blockedBy...), Plan: semantic.Plan, Evidence: semantic.Evidence, Metrics: metrics, Fetched: fetched}, nil
+	return CaseRun{Engine: engine, CaseID: fixtureCase.ID, Status: semantic.Plan.Status, ReuseEligibility: semantic.Plan.Status, ReuseClaim: semantic.Plan.Status, FullVerificationStatus: fullStatus, SemanticRoot: semantic.SemanticRoot, ExecutionMode: executionMode, FallbackReason: fallbackReason, NextOperation: nextOperation, BlockedBy: append([]string{}, blockedBy...), Plan: semantic.Plan, Evidence: semantic.Evidence, Metrics: metrics, Fetched: fetched}, nil
 }
 
 func RunPair(contract Contract, bundle Bundle, fixtureCase FixtureCase, fetcher LockFetcher, stats StatsProvider) (CaseRun, CaseRun, CanonicalComparison, error) {
