@@ -110,7 +110,7 @@ func parseContractLines(contents string) (Contract, error) {
 				return Contract{}, fmt.Errorf(".gooo line %d: status count: %w", lineNumber, parseErr)
 			}
 			contract.RequiredCaseStatuses[Status(fields[1])] = count
-		case "source_role", "cross_project_required_gates", "current_lock_set", "historical_denominator", "current_denominator":
+		case "source_role", "cross_project_required_gates", "current_lock_set", "historical_denominator", "current_denominator", "lock_identity":
 			// These are explicit contract declarations consumed by the report.
 		default:
 			return Contract{}, fmt.Errorf(".gooo line %d: unknown declaration %q", lineNumber, fields[0])
