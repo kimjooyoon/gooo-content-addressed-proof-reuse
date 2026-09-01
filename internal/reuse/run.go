@@ -71,6 +71,9 @@ func RunPair(contract Contract, bundle Bundle, fixtureCase FixtureCase, fetcher 
 	if baseline.SemanticRoot != candidate.SemanticRoot || baseline.Status != candidate.Status || !comparison.UnknownEqual || !comparison.RefutedEqual || !comparison.EvidenceEqual {
 		return baseline, candidate, comparison, fmt.Errorf("baseline/candidate semantic evidence diverged for %s", fixtureCase.ID)
 	}
+	if err := ValidateExecutionBoundary(fixtureCase, baseline, candidate, len(candidate.Plan.Selected)+len(candidate.Plan.Reused)); err != nil {
+		return baseline, candidate, comparison, err
+	}
 	return baseline, candidate, comparison, nil
 }
 
