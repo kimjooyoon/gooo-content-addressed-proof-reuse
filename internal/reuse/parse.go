@@ -86,15 +86,17 @@ func parseContractLines(contents string) (Contract, error) {
 		case "invalidation_edge":
 			contract.InvalidationEdges = append(contract.InvalidationEdges, fields[1])
 		case "retry":
-			contract.RetryCount, err = strconv.Atoi(fields[1])
-			if err != nil {
-				return Contract{}, fmt.Errorf(".gooo line %d: retry: %w", lineNumber, err)
+			parseErr, parseError := strconv.Atoi(fields[1])
+			if parseError != nil {
+				return Contract{}, fmt.Errorf(".gooo line %d: retry: %w", lineNumber, parseError)
 			}
+			contract.RetryCount = parseErr
 		case "timeout_ms":
-			contract.TimeoutMS, err = strconv.Atoi(fields[1])
-			if err != nil {
-				return Contract{}, fmt.Errorf(".gooo line %d: timeout: %w", lineNumber, err)
+			parseValue, parseError := strconv.Atoi(fields[1])
+			if parseError != nil {
+				return Contract{}, fmt.Errorf(".gooo line %d: timeout: %w", lineNumber, parseError)
 			}
+			contract.TimeoutMS = parseValue
 		case "unknown_fields":
 			contract.UnknownFields = strings.Split(fields[1], ",")
 		case "indicator_vector":
@@ -108,7 +110,7 @@ func parseContractLines(contents string) (Contract, error) {
 				return Contract{}, fmt.Errorf(".gooo line %d: status count: %w", lineNumber, parseErr)
 			}
 			contract.RequiredCaseStatuses[Status(fields[1])] = count
-		case "source_role", "cross_project_required_gates", "current_lock_set", "historical_denominator", "current_denominator":
+		case "source_role", "cross_project_required_gates", "current_lock_set", "historical_denominator", "current_denominator", "lock_identity":
 			// These are explicit contract declarations consumed by the report.
 		default:
 			return Contract{}, fmt.Errorf(".gooo line %d: unknown declaration %q", lineNumber, fields[0])

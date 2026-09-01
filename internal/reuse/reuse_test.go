@@ -37,6 +37,9 @@ func TestCanonicalDistributionAndExactLockDeltas(t *testing.T) {
 		if !comparison.EvidenceEqual || baseline.SemanticRoot != candidate.SemanticRoot {
 			t.Fatalf("semantic pair mismatch for %s", fixtureCase.ID)
 		}
+		if err := reuse.ValidateExecutionBoundary(fixtureCase, baseline, candidate, 57); err != nil {
+			t.Fatal(err)
+		}
 		if fixtureCase.ID == "closed-full-reuse" && (candidate.Metrics.Reused != 57 || candidate.Metrics.Selected != 0 || candidate.Metrics.Requests != 0) {
 			t.Fatalf("unexpected full reuse metrics: %+v", candidate.Metrics)
 		}

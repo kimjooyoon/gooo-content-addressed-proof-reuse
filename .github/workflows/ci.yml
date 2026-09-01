@@ -2,8 +2,9 @@ name: content-addressed-proof-reuse
 
 on:
   push:
-    branches: [main]
+    branches: [main, implementation]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -49,7 +50,7 @@ jobs:
         run: |
           set +e
           work="$RUNNER_TEMP/gooo-content-addressed-proof-reuse"
-          /usr/bin/time -f '%e %M' -o "$work/test.time" sh -c 'go test -json -count=1 ./... > "$RUNNER_TEMP/gooo-content-addressed-proof-reuse/go-test.json"'
+          /usr/bin/time -f '%e %M' -o "$work/test.time" sh -c 'go test -count=1 ./... > "$RUNNER_TEMP/gooo-content-addressed-proof-reuse/go-test.txt" 2>&1'
           status=$?
           exit "$status"
 

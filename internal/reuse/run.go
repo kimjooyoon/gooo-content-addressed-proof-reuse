@@ -44,10 +44,14 @@ func RunCase(contract Contract, bundle Bundle, fixtureCase FixtureCase, engine s
 	semantic.Plan.ExecutionMode = executionMode
 	semantic.Plan.FallbackReason = fallbackReason
 	semantic.Plan.NextOperation = nextOperation
-	semantic.Plan.BlockedBy = append([]string(nil), blockedBy...)
+	semantic.Plan.BlockedBy = append([]string{}, blockedBy...)
 	semantic.Evidence.FullVerificationStatus = fullStatus
-	metrics := Metrics{WallMS: wallMS, PeakRSSKiB: afterRSS, Requests: fetchStats.Requests, BytesRead: fetchStats.BytesRead, BytesDownloaded: fetchStats.BytesDownloaded, Selected: len(locks), Executed: len(locks), Reused: len(semantic.Plan.Reused), Unknown: boolInt(semantic.Plan.Status == Unknown), Refuted: boolInt(semantic.Plan.Status == Refuted)}
-	return CaseRun{Engine: engine, CaseID: fixtureCase.ID, Status: semantic.Plan.Status, ReuseEligibility: semantic.Plan.Status, ReuseClaim: semantic.Plan.Status, FullVerificationStatus: fullStatus, SemanticRoot: semantic.SemanticRoot, ExecutionMode: executionMode, FallbackReason: fallbackReason, NextOperation: nextOperation, BlockedBy: append([]string(nil), blockedBy...), Plan: semantic.Plan, Evidence: semantic.Evidence, Metrics: metrics, Fetched: fetched}, nil
+	actualReused := 0
+	if engine == "candidate" && semantic.Plan.Status == Closed {
+		actualReused = len(semantic.Plan.Reused)
+	}
+	metrics := Metrics{WallMS: wallMS, PeakRSSKiB: afterRSS, Requests: fetchStats.Requests, BytesRead: fetchStats.BytesRead, BytesDownloaded: fetchStats.BytesDownloaded, Selected: len(locks), Executed: len(locks), Reused: actualReused, Unknown: boolInt(semantic.Plan.Status == Unknown), Refuted: boolInt(semantic.Plan.Status == Refuted)}
+	return CaseRun{Engine: engine, CaseID: fixtureCase.ID, Status: semantic.Plan.Status, ReuseEligibility: semantic.Plan.Status, ReuseClaim: semantic.Plan.Status, FullVerificationStatus: fullStatus, SemanticRoot: semantic.SemanticRoot, ExecutionMode: executionMode, FallbackReason: fallbackReason, NextOperation: nextOperation, BlockedBy: append([]string{}, blockedBy...), Plan: semantic.Plan, Evidence: semantic.Evidence, Metrics: metrics, Fetched: fetched}, nil
 }
 
 func RunPair(contract Contract, bundle Bundle, fixtureCase FixtureCase, fetcher LockFetcher, stats StatsProvider) (CaseRun, CaseRun, CanonicalComparison, error) {
@@ -70,6 +74,9 @@ func RunPair(contract Contract, bundle Bundle, fixtureCase FixtureCase, fetcher 
 	comparison := CanonicalComparison{CaseID: fixtureCase.ID, SemanticRoot: candidate.SemanticRoot, Status: candidate.Status, UnknownEqual: equalUnknown(baseline.Evidence.Unknown, candidate.Evidence.Unknown), RefutedEqual: equalStrings(baseline.Evidence.Refuted, candidate.Evidence.Refuted), EvidenceEqual: string(baselineEvidence) == string(candidateEvidence)}
 	if baseline.SemanticRoot != candidate.SemanticRoot || baseline.Status != candidate.Status || !comparison.UnknownEqual || !comparison.RefutedEqual || !comparison.EvidenceEqual {
 		return baseline, candidate, comparison, fmt.Errorf("baseline/candidate semantic evidence diverged for %s", fixtureCase.ID)
+	}
+	if err := ValidateExecutionBoundary(fixtureCase, baseline, candidate, len(candidate.Plan.Selected)+len(candidate.Plan.Reused)); err != nil {
+		return baseline, candidate, comparison, err
 	}
 	return baseline, candidate, comparison, nil
 }
