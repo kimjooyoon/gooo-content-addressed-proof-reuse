@@ -2,8 +2,9 @@ name: content-addressed-proof-reuse
 
 on:
   push:
-    branches: [main]
+    branches: [main, implementation]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
