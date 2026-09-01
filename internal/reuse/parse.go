@@ -86,15 +86,17 @@ func parseContractLines(contents string) (Contract, error) {
 		case "invalidation_edge":
 			contract.InvalidationEdges = append(contract.InvalidationEdges, fields[1])
 		case "retry":
-			contract.RetryCount, err = strconv.Atoi(fields[1])
-			if err != nil {
-				return Contract{}, fmt.Errorf(".gooo line %d: retry: %w", lineNumber, err)
+			parseErr, parseError := strconv.Atoi(fields[1])
+			if parseError != nil {
+				return Contract{}, fmt.Errorf(".gooo line %d: retry: %w", lineNumber, parseError)
 			}
+			contract.RetryCount = parseErr
 		case "timeout_ms":
-			contract.TimeoutMS, err = strconv.Atoi(fields[1])
-			if err != nil {
-				return Contract{}, fmt.Errorf(".gooo line %d: timeout: %w", lineNumber, err)
+			parseValue, parseError := strconv.Atoi(fields[1])
+			if parseError != nil {
+				return Contract{}, fmt.Errorf(".gooo line %d: timeout: %w", lineNumber, parseError)
 			}
+			contract.TimeoutMS = parseValue
 		case "unknown_fields":
 			contract.UnknownFields = strings.Split(fields[1], ",")
 		case "indicator_vector":
